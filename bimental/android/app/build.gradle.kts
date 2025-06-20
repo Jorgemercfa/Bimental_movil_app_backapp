@@ -45,4 +45,8 @@ flutter {
 }
 dependencies{
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation (platform("com.google.firebase:firebase-bom:32.7.0")) // Usa la versión más reciente
+    implementation ("com.google.firebase:firebase-messaging")
+    implementation ("com.google.android.gms:play-services-base:18.2.0") // Añade esta línea
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.11.0")
 }

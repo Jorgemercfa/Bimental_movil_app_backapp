@@ -7,6 +7,9 @@ import 'package:flutter/services.dart'; // Añadido para rootBundle
 import 'AnswersRepository.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+// NUEVO: Importa ManageAnswers para guardar los resultados finales del DASS-21
+import 'ManageAnswers.dart';
+
 void main() => runApp(const ChatBotApp());
 
 class ChatBotApp extends StatelessWidget {
@@ -36,6 +39,9 @@ class _ChatScreenState extends State<ChatScreen> {
   late DASS21Predictor _predictor;
   bool _modelLoaded = false;
 
+  // NUEVO: Guarda respuestas textuales para el cuestionario DASS-21
+  List<String> dass21TextAnswers = [];
+
   @override
   void initState() {
     super.initState();
@@ -55,68 +61,70 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   final Map<String, List<Map<String, String>>> _questions = {
+    // ... (todas las preguntas sin cambios)
+    // Las preguntas originales se mantienen aquí exactamente igual.
     "1": [
       {"id": "1.1", "texto": "Me costó mucho relajarme"},
       {"id": "1.2", "texto": "Me fue difícil relajarme"},
       {"id": "1.3", "texto": "Relajarme resultó ser un desafío"},
       {
         "id": "1.4",
-        "texto": "Tuve problemas para encontrar un momento de relajación",
-      },
+        "texto": "Tuve problemas para encontrar un momento de relajación"
+      }
     ],
     "2": [
       {"id": "2.1", "texto": "Me di cuenta que tenía la boca seca"},
       {"id": "2.2", "texto": "Noté que mi boca estaba seca"},
       {"id": "2.3", "texto": "Sentí sequedad en la boca"},
-      {"id": "2.4", "texto": "Percibí que mi boca carecía de humedad"},
+      {"id": "2.4", "texto": "Percibí que mi boca carecía de humedad"}
     ],
     "3": [
       {"id": "3.1", "texto": "No podía sentir ningún sentimiento positivo"},
       {
         "id": "3.2",
-        "texto": "Me resultaba imposible experimentar emociones positivas",
+        "texto": "Me resultaba imposible experimentar emociones positivas"
       },
       {"id": "3.3", "texto": "No lograba sentirme bien emocionalmente"},
-      {"id": "3.4", "texto": "No podía conectar con sentimientos agradables"},
+      {"id": "3.4", "texto": "No podía conectar con sentimientos agradables"}
     ],
     "4": [
       {
         "id": "4.1",
         "texto":
-            "Se me hizo difícil respirar (p. ej., respiración excesivamente rápida o falta de aliento sin hacer esfuerzo físico)",
+        "Se me hizo difícil respirar (p. ej., respiración excesivamente rápida o falta de aliento sin hacer esfuerzo físico)"
       },
       {"id": "4.2", "texto": "Tuve problemas para respirar de forma normal"},
       {"id": "4.3", "texto": "Sentí que me costaba tomar aire"},
       {
         "id": "4.4",
         "texto":
-            "Experimenté dificultad al intentar respirar sin razón aparente",
-      },
+        "Experimenté dificultad al intentar respirar sin razón aparente"
+      }
     ],
     "5": [
       {
         "id": "5.1",
-        "texto": "Se me hizo difícil tomar la iniciativa para hacer cosas",
+        "texto": "Se me hizo difícil tomar la iniciativa para hacer cosas"
       },
       {"id": "5.2", "texto": "Me costó iniciar actividades por mi cuenta"},
       {
         "id": "5.3",
-        "texto": "Sentí que no podía empezar cosas nuevas fácilmente",
+        "texto": "Sentí que no podía empezar cosas nuevas fácilmente"
       },
-      {"id": "5.4", "texto": "Iniciar tareas fue complicado para mí"},
+      {"id": "5.4", "texto": "Iniciar tareas fue complicado para mí"}
     ],
     "6": [
       {"id": "6.1", "texto": "Reaccioné exageradamente en ciertas situaciones"},
       {
         "id": "6.2",
-        "texto": "Respondí de forma desproporcionada en algunas circunstancias",
+        "texto": "Respondí de forma desproporcionada en algunas circunstancias"
       },
       {
         "id": "6.3",
         "texto":
-            "Mi reacción en ciertas situaciones fue más intensa de lo normal",
+        "Mi reacción en ciertas situaciones fue más intensa de lo normal"
       },
-      {"id": "6.4", "texto": "Exageré mis respuestas en determinados momentos"},
+      {"id": "6.4", "texto": "Exageré mis respuestas en determinados momentos"}
     ],
     "7": [
       {"id": "7.1", "texto": "Tuve temblores (p. ej., en las manos)"},
@@ -124,35 +132,35 @@ class _ChatScreenState extends State<ChatScreen> {
       {"id": "7.3", "texto": "Experimenté temblores físicos"},
       {
         "id": "7.4",
-        "texto": "Noté movimientos involuntarios en mis extremidades",
-      },
+        "texto": "Noté movimientos involuntarios en mis extremidades"
+      }
     ],
     "8": [
       {"id": "8.1", "texto": "Sentí que tenía muchos nervios"},
       {"id": "8.2", "texto": "Me sentí extremadamente nervioso"},
       {"id": "8.3", "texto": "Los nervios me dominaron en varias ocasiones"},
-      {"id": "8.4", "texto": "Estuve inquieto y con mucha ansiedad"},
+      {"id": "8.4", "texto": "Estuve inquieto y con mucha ansiedad"}
     ],
     "9": [
       {
         "id": "9.1",
         "texto":
-            "Estuve preocupado por situaciones en las cuales podía entrar en pánico y hacer el ridículo",
+        "Estuve preocupado por situaciones en las cuales podía entrar en pánico y hacer el ridículo"
       },
       {
         "id": "9.2",
         "texto":
-            "Me angustié ante la posibilidad de perder el control y avergonzarme",
+        "Me angustié ante la posibilidad de perder el control y avergonzarme"
       },
       {
         "id": "9.3",
         "texto":
-            "Temí encontrarme en situaciones donde pudiera entrar en pánico",
+        "Temí encontrarme en situaciones donde pudiera entrar en pánico"
       },
       {
         "id": "9.4",
-        "texto": "Me preocupaba pasar vergüenza por no controlar mi ansiedad",
-      },
+        "texto": "Me preocupaba pasar vergüenza por no controlar mi ansiedad"
+      }
     ],
     "10": [
       {"id": "10.1", "texto": "Sentí que no tenía nada por lo que ilusionarme"},
@@ -160,79 +168,79 @@ class _ChatScreenState extends State<ChatScreen> {
       {"id": "10.3", "texto": "Me faltaba entusiasmo hacia el futuro"},
       {
         "id": "10.4",
-        "texto": "Carecía de expectativas positivas que me alegraran",
-      },
+        "texto": "Carecía de expectativas positivas que me alegraran"
+      }
     ],
     "11": [
       {"id": "11.1", "texto": "Me sentí agitado"},
       {"id": "11.2", "texto": "Estuve inquieto y alterado"},
       {"id": "11.3", "texto": "Sentí que no podía estar en calma"},
-      {"id": "11.4", "texto": "Me noté muy nervioso y acelerado"},
+      {"id": "11.4", "texto": "Me noté muy nervioso y acelerado"}
     ],
     "12": [
       {"id": "12.1", "texto": "Se me hizo difícil relajarme"},
       {"id": "12.2", "texto": "Relajarme fue complicado para mí"},
       {
         "id": "12.3",
-        "texto": "Tuve problemas para alcanzar un estado de calma",
+        "texto": "Tuve problemas para alcanzar un estado de calma"
       },
-      {"id": "12.4", "texto": "Me costó mucho encontrar tranquilidad"},
+      {"id": "12.4", "texto": "Me costó mucho encontrar tranquilidad"}
     ],
     "13": [
       {"id": "13.1", "texto": "Me sentí triste y deprimido"},
       {"id": "13.2", "texto": "Experimenté una sensación profunda de tristeza"},
       {"id": "13.3", "texto": "Me noté abatido y sin ánimos"},
-      {"id": "13.4", "texto": "Estuve emocionalmente decaído"},
+      {"id": "13.4", "texto": "Estuve emocionalmente decaído"}
     ],
     "14": [
       {
         "id": "14.1",
         "texto":
-            "No toleré nada que no me permitiera continuar con lo que estaba haciendo",
+        "No toleré nada que no me permitiera continuar con lo que estaba haciendo"
       },
       {
         "id": "14.2",
-        "texto": "Me frustré con cualquier interrupción en mis actividades",
+        "texto": "Me frustré con cualquier interrupción en mis actividades"
       },
       {
         "id": "14.3",
         "texto":
-            "No pude soportar situaciones que afectaran mi ritmo de trabajo",
+        "No pude soportar situaciones que afectaran mi ritmo de trabajo"
       },
       {
         "id": "14.4",
-        "texto": "Me molestaba cualquier cosa que interrumpiera mis planes",
-      },
+        "texto": "Me molestaba cualquier cosa que interrumpiera mis planes"
+      }
     ],
     "15": [
       {"id": "15.1", "texto": "Sentí que estaba cercano a sentir pánico"},
       {
         "id": "15.2",
-        "texto": "Percibí que estaba al borde de entrar en pánico",
+        "texto": "Percibí que estaba al borde de entrar en pánico"
       },
       {
         "id": "15.3",
-        "texto": "Tuve la sensación de que un ataque de pánico era inminente",
+        "texto": "Tuve la sensación de que un ataque de pánico era inminente"
       },
       {
         "id": "15.4",
-        "texto": "Sentí que la ansiedad extrema estaba a punto de desbordarse",
-      },
+        "texto": "Sentí que la ansiedad extrema estaba a punto de desbordarse"
+      }
     ],
     "16": [
       {"id": "16.1", "texto": "No me pude entusiasmar por nada"},
       {"id": "16.2", "texto": "Nada lograba despertar mi interés"},
       {"id": "16.3", "texto": "No encontré motivación en ninguna actividad"},
-      {"id": "16.4", "texto": "Carecía de entusiasmo por todo"},
+      {"id": "16.4", "texto": "Carecía de entusiasmo por todo"}
     ],
     "17": [
       {"id": "17.1", "texto": "Sentí que valía muy poco como persona"},
       {
         "id": "17.2",
-        "texto": "Percibí que mi valor personal era insignificante",
+        "texto": "Percibí que mi valor personal era insignificante"
       },
       {"id": "17.3", "texto": "Me sentí menospreciado, incluso por mí mismo"},
-      {"id": "17.4", "texto": "Creí que no tenía importancia como individuo"},
+      {"id": "17.4", "texto": "Creí que no tenía importancia como individuo"}
     ],
     "18": [
       {"id": "18.1", "texto": "Sentí que estaba muy irritable"},
@@ -240,25 +248,25 @@ class _ChatScreenState extends State<ChatScreen> {
       {"id": "18.3", "texto": "Estuve más propenso a la irritación"},
       {
         "id": "18.4",
-        "texto": "Cualquier cosa pequeña me hacía perder la paciencia",
-      },
+        "texto": "Cualquier cosa pequeña me hacía perder la paciencia"
+      }
     ],
     "19": [
       {
         "id": "19.1",
         "texto":
-            "Sentí la actividad de mi corazón a pesar de no haber hecho ningún esfuerzo físico (p. ej., aumento de los latidos, sensación de palpitación o salto de los latidos)",
+        "Sentí la actividad de mi corazón a pesar de no haber hecho ningún esfuerzo físico (p. ej., aumento de los latidos, sensación de palpitación o salto de los latidos)"
       },
       {"id": "19.2", "texto": "Percibí latidos acelerados sin razón aparente"},
       {
         "id": "19.3",
-        "texto": "Sentí que mi corazón palpitaba con fuerza, incluso en reposo",
+        "texto": "Sentí que mi corazón palpitaba con fuerza, incluso en reposo"
       },
       {
         "id": "19.4",
         "texto":
-            "Noté un ritmo cardíaco irregular sin haber realizado ejercicio",
-      },
+        "Noté un ritmo cardíaco irregular sin haber realizado ejercicio"
+      }
     ],
     "20": [
       {"id": "20.1", "texto": "Tuve miedo sin razón"},
@@ -266,18 +274,15 @@ class _ChatScreenState extends State<ChatScreen> {
       {"id": "20.3", "texto": "Me asusté sin causa aparente"},
       {
         "id": "20.4",
-        "texto": "Experimenté una sensación de miedo injustificado",
-      },
+        "texto": "Experimenté una sensación de miedo injustificado"
+      }
     ],
     "21": [
       {"id": "21.1", "texto": "Sentí que la vida no tenía ningún sentido"},
       {"id": "21.2", "texto": "Percibí que mi existencia carecía de propósito"},
       {"id": "21.3", "texto": "Me parecía que todo en la vida era inútil"},
-      {
-        "id": "21.4",
-        "texto": "Sentí que no había razones para seguir adelante",
-      },
-    ],
+      {"id": "21.4", "texto": "Sentí que no había razones para seguir adelante"}
+    ]
   };
 
   List<Map<String, String>> _selectedQuestions = [];
@@ -301,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages.add({
             'bot':
-                "Debes iniciar sesión para realizar el cuestionario. Por favor, inicia sesión primero.",
+            "Debes iniciar sesión para realizar el cuestionario. Por favor, inicia sesión primero.",
           });
         });
         return;
@@ -313,28 +318,24 @@ class _ChatScreenState extends State<ChatScreen> {
         _controller.clear();
         questionCategoryNumber = 1;
         answers.clear();
+        dass21TextAnswers.clear(); // NUEVO: Limpia respuestas textuales del DASS-21
       });
       return;
     }
 
     if (_showQuestionnaire) {
-      if (RegExp(r'^[0-3]$').hasMatch(text)) {
-        answers.add(text);
-        questionCategoryNumber++;
+      // CAMBIO: Ahora acepta respuestas textuales (no sólo 0-3)
+      dass21TextAnswers.add(text); // Guarda la respuesta textual
 
-        if (questionCategoryNumber <= _questions.length) {
-          setState(() {
-            _selectedQuestions = [_generateRandomQuestion()];
-          });
-        } else {
-          _finishQuestionnaire();
-        }
-      } else {
+      questionCategoryNumber++;
+
+      if (questionCategoryNumber <= _questions.length) {
         setState(() {
-          _messages.add({
-            'bot': "Por favor, ingresa un número válido (0, 1, 2 o 3).",
-          });
+          _selectedQuestions = [_generateRandomQuestion()];
+          _controller.clear();
         });
+      } else {
+        await _finishQuestionnaire(); // Cambiado a await para procesamiento asíncrono
       }
       return;
     }
@@ -347,18 +348,17 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_modelLoaded) {
       try {
         final prediction = await _predictor.predict(text);
-        // Aquí puedes procesar la predicción y mostrar un mensaje adecuado
         setState(() {
           _messages.add({
             'bot':
-                "Análisis completado. Resultados: Depresión: ${prediction[0].toStringAsFixed(2)}, Ansiedad: ${prediction[1].toStringAsFixed(2)}, Estrés: ${prediction[2].toStringAsFixed(2)}",
+            "Análisis completado. Resultados: Depresión: ${prediction[0].toStringAsFixed(2)}, Ansiedad: ${prediction[1].toStringAsFixed(2)}, Estrés: ${prediction[2].toStringAsFixed(2)}",
           });
         });
       } catch (e) {
         setState(() {
           _messages.add({
             'bot':
-                "Lo siento, ocurrió un error al analizar tu mensaje. Por favor, intenta de nuevo.",
+            "Lo siento, ocurrió un error al analizar tu mensaje. Por favor, intenta de nuevo.",
           });
         });
       }
@@ -366,13 +366,13 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _messages.add({
           'bot':
-              "El modelo de análisis aún no está cargado. Por favor, espera un momento e intenta nuevamente.",
+          "El modelo de análisis aún no está cargado. Por favor, espera un momento e intenta nuevamente.",
         });
       });
     }
   }
 
-  void _finishQuestionnaire() async {
+  Future<void> _finishQuestionnaire() async {
     final userId = await SessionService.getUserId();
     if (userId == null) {
       setState(() {
@@ -381,33 +381,61 @@ class _ChatScreenState extends State<ChatScreen> {
         });
         _showQuestionnaire = false;
         _selectedQuestions = [];
-        answers.clear();
+        dass21TextAnswers.clear();
       });
       return;
     }
 
     try {
-      await AnswersRepository.saveAnswers(answers, userId);
-      final timestamp = DateFormat(
-        'yyyy-MM-dd HH:mm:ss',
-      ).format(DateTime.now());
-      setState(() {
-        _messages.add({
-          'bot':
-              "✅ Cuestionario completado y guardado correctamente.\n📅 Fecha: $timestamp",
+      // CAMBIO: Transforma respuestas textuales a valores numéricos usando el modelo antes de guardar
+      if (_modelLoaded) {
+        // Procesa cada respuesta textual con el modelo LSTM, y suma los scores finales
+        double totalDepresion = 0;
+        double totalAnsiedad = 0;
+        double totalEstres = 0;
+        for (String respuesta in dass21TextAnswers) {
+          final pred = await _predictor.predict(respuesta);
+          totalDepresion += pred[0];
+          totalAnsiedad += pred[1];
+          totalEstres += pred[2];
+        }
+        // Redondea los resultados finales
+        final scores = {
+          'depresion': totalDepresion.round(),
+          'ansiedad': totalAnsiedad.round(),
+          'estres': totalEstres.round(),
+        };
+
+        // Guarda el resultado global en Firebase usando ManageAnswers
+        await ManageAnswers.saveUserAnswers(userId, scores);
+
+        final timestamp = DateFormat(
+          'yyyy-MM-dd HH:mm:ss',
+        ).format(DateTime.now());
+        setState(() {
+          _messages.add({
+            'bot':
+            "✅ Cuestionario completado y guardado correctamente.\nResultados finales:\nDepresión: ${scores['depresion']}\nAnsiedad: ${scores['ansiedad']}\nEstrés: ${scores['estres']}\n📅 Fecha: $timestamp",
+          });
+          _showQuestionnaire = false;
+          _selectedQuestions = [];
         });
-        _showQuestionnaire = false;
-        _selectedQuestions = [];
-      });
+      } else {
+        setState(() {
+          _messages.add({
+            'bot': "El modelo no está cargado. No se pueden guardar resultados.",
+          });
+        });
+      }
     } catch (e) {
       setState(() {
         _messages.add({
           'bot':
-              "❌ Error al guardar el cuestionario. Por favor, intenta nuevamente.",
+          "❌ Error al guardar el cuestionario. Por favor, intenta nuevamente.",
         });
       });
     } finally {
-      answers.clear();
+      dass21TextAnswers.clear();
       print("El id del usuario que realizo el cuestionario es: $userId");
     }
   }
@@ -482,12 +510,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   const Text(
-                    'Responde a la siguiente pregunta con:',
+                    'Responde a la pregunta en tus propias palabras (texto libre).',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const Text(
-                    '0 No me sucedió\n1 Me sucedió un poco, o durante parte del tiempo\n2 Me sucedió bastante, o durante una buena parte del tiempo\n3 Me sucedió mucho, o la mayor parte del tiempo',
-                    style: TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(

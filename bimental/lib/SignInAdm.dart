@@ -46,32 +46,43 @@ class _SignInAdminState extends State<SignInAdmin> {
 
   Future<void> signIn() async {
     if (_formKey.currentState!.validate()) {
-      List<Administrators> adminsRegistrados = await adminRepository
-          .getAdmins();
+      try {
+        List<Administrators> adminsRegistrados = await adminRepository.getAdmins();
 
-      Administrators? adminEncontrado;
-      for (var admin in adminsRegistrados) {
-        if (admin.email == emailController.text.trim() &&
-            admin.password == passwordController.text.trim()) {
-          adminEncontrado = admin;
-          break;
-        }
-      }
-
-      if (adminEncontrado != null) {
-        // Obtener y guardar el token FCM tras login exitoso
-        String? token = await FirebaseMessaging.instance.getToken();
-        if (token != null) {
-          await adminRepository.updateAdminFcmToken(adminEncontrado.id, token);
+        Administrators? adminEncontrado;
+        for (var admin in adminsRegistrados) {
+          if (admin.email == emailController.text.trim() &&
+              admin.password == passwordController.text.trim()) {
+            adminEncontrado = admin;
+            break;
+          }
         }
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePageAdmin()),
-        );
-      } else {
+        if (adminEncontrado != null) {
+          try {
+            // Obtener y guardar el token FCM tras login exitoso
+            String? token = await FirebaseMessaging.instance.getToken();
+            if (token != null) {
+              await adminRepository.updateAdminFcmToken(adminEncontrado.id, token);
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HomePageAdmin()),
+            );
+          } catch (e) {
+            scaffoldKey.currentState?.showSnackBar(
+              SnackBar(content: Text('Error al obtener token: ${e.toString()}')),
+            );
+          }
+        } else {
+          scaffoldKey.currentState?.showSnackBar(
+            const SnackBar(content: Text('Correo o contraseña incorrectos')),
+          );
+        }
+      } catch (e) {
         scaffoldKey.currentState?.showSnackBar(
-          const SnackBar(content: Text('Correo o contraseña incorrectos')),
+          SnackBar(content: Text('Error al iniciar sesión: ${e.toString()}')),
         );
       }
     }

@@ -13,7 +13,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mis Resultados',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
       home: HistorialResultadosScreen(),
     );
   }
@@ -54,9 +56,8 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
       }
 
       // Obtener solo los resultados del usuario actual
-      List<AnswersUser> data = await AnswersRepository.getAnswersFromFirestore(
-        userId,
-      );
+      List<AnswersUser> data =
+      await AnswersRepository.getAnswersFromFirestore(userId);
 
       List<Map<String, dynamic>> nuevosResultados = data.map((result) {
         // Separar fecha y hora del timestamp
@@ -89,7 +90,7 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
       setState(() {
         isLoading = false;
         errorMessage =
-            'Error al cargar tus resultados. Por favor, intenta nuevamente.';
+        'Error al cargar tus resultados. Por favor, intenta nuevamente.';
         if (kDebugMode) {
           errorMessage = 'Error: ${e.toString()}';
         }
@@ -136,67 +137,63 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
             ? Center(child: CircularProgressIndicator())
             : errorMessage != null
             ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text(
-                    errorMessage!,
-                    style: TextStyle(fontSize: 18),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              errorMessage!,
+              style: TextStyle(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        )
             : resultados.isEmpty
             ? Center(
-                child: Text(
-                  'No hay resultados guardados.',
-                  style: TextStyle(fontSize: 18),
-                ),
-              )
+          child: Text(
+            'No hay resultados guardados.',
+            style: TextStyle(fontSize: 18),
+          ),
+        )
             : ListView.builder(
-                itemCount: resultados.length,
-                itemBuilder: (context, index) {
-                  final resultado = resultados[index];
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ResultadoDetalleScreen(
-                            fecha: resultado['fecha'],
-                            hora: resultado['hora'],
-                            detalles: resultado,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8.0),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1A119B),
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.insert_chart,
-                            color: Colors.white,
-                            size: 30,
-                          ),
-                          SizedBox(width: 16),
-                          Text(
-                            '${resultado['fecha']} ${resultado['hora']}',
-                            style: TextStyle(color: Colors.white, fontSize: 18),
-                          ),
-                        ],
-                      ),
+          itemCount: resultados.length,
+          itemBuilder: (context, index) {
+            final resultado = resultados[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResultadoDetalleScreen(
+                      fecha: resultado['fecha'],
+                      hora: resultado['hora'],
+                      detalles: resultado,
                     ),
-                  );
-                },
+                  ),
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8.0),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 16.0, horizontal: 8.0),
+                decoration: BoxDecoration(
+                  color: Color(0xFF1A119B),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.insert_chart,
+                        color: Colors.white, size: 30),
+                    SizedBox(width: 16),
+                    Text(
+                      '${resultado['fecha']} ${resultado['hora']}',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 18),
+                    ),
+                  ],
+                ),
               ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -219,10 +216,8 @@ class ResultadoDetalleScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Detalles del resultado',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: Text('Detalles del resultado',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Color(0xFF1A119B),
         iconTheme: IconThemeData(color: Colors.white),
       ),
