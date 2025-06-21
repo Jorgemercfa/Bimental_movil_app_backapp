@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "381340908284",
+    "project_id": "bimental-eecd7",
+    "storage_bucket": "bimental-eecd7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:381340908284:android:56ada9d6ea63b5098ab579",
+        "android_client_info": {
+          "package_name": "com.example.bimental"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlC-fZPUbwRAg3yLNDAVle_IYzrhZ5s9A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

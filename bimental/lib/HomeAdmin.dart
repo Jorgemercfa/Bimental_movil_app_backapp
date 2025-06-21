@@ -2,6 +2,8 @@ import 'package:bimental/ConfigutarionAdmin.dart';
 import 'package:bimental/resultadosAdmin.dart';
 import 'package:flutter/material.dart';
 
+import 'DashboardScreen.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -83,7 +85,30 @@ class HomePageAdmin extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => DashboardScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A119B),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 15,
+                    horizontal: 20,
+                  ),
+                ),
+                child: const Text(
+                  'Dashboard',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             SizedBox(
               width: 200,
               child: ElevatedButton(
