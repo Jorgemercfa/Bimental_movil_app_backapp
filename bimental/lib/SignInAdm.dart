@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'ForgetPasswordAdmin.dart';
 import 'HomeAdmin.dart';
 import 'AdminRepository.dart';
-import 'package:firebase_messaging/firebase_messaging.dart'; // <-- IMPORTANTE
 
 void main() {
   runApp(const MyApp());
@@ -40,14 +39,15 @@ class _SignInAdminState extends State<SignInAdmin> {
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldMessengerState> scaffoldKey =
-      GlobalKey<ScaffoldMessengerState>();
+  GlobalKey<ScaffoldMessengerState>();
 
   final AdminRepository adminRepository = AdminRepository();
 
   Future<void> signIn() async {
     if (_formKey.currentState!.validate()) {
       try {
-        List<Administrators> adminsRegistrados = await adminRepository.getAdmins();
+        List<Administrators> adminsRegistrados =
+        await adminRepository.getAdmins();
 
         Administrators? adminEncontrado;
         for (var admin in adminsRegistrados) {
@@ -59,22 +59,10 @@ class _SignInAdminState extends State<SignInAdmin> {
         }
 
         if (adminEncontrado != null) {
-          try {
-            // Obtener y guardar el token FCM tras login exitoso
-            String? token = await FirebaseMessaging.instance.getToken();
-            if (token != null) {
-              await adminRepository.updateAdminFcmToken(adminEncontrado.id, token);
-            }
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const HomePageAdmin()),
-            );
-          } catch (e) {
-            scaffoldKey.currentState?.showSnackBar(
-              SnackBar(content: Text('Error al obtener token: ${e.toString()}')),
-            );
-          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePageAdmin()),
+          );
         } else {
           scaffoldKey.currentState?.showSnackBar(
             const SnackBar(content: Text('Correo o contraseña incorrectos')),
@@ -162,7 +150,8 @@ class _SignInAdminState extends State<SignInAdmin> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const ForgetPasswordPageAdmin(),
+                        builder: (context) =>
+                        const ForgetPasswordPageAdmin(),
                       ),
                     );
                   },
