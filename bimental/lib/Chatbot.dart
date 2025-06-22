@@ -56,7 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _modelLoaded = true;
       });
     } catch (e) {
-      print("Error loading model: $e");
+      print("c: $e");
     }
   }
 
@@ -296,7 +296,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    // ALERTA de texto vacío
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Por favor, escribe un texto antes de enviar.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     if (text.toLowerCase() == 'cuestionario') {
       final userId = await SessionService.getUserId();
@@ -566,6 +576,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
+                                onSubmitted: (_) => _sendMessage(),
                               ),
                             ),
                           ),
