@@ -61,8 +61,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   final Map<String, List<Map<String, String>>> _questions = {
-    // ... (todas las preguntas sin cambios)
-    // Las preguntas originales se mantienen aquí exactamente igual.
     "1": [
       {"id": "1.1", "texto": "1) Me costó mucho relajarme"},
       {"id": "1.2", "texto": "1) Me fue difícil relajarme"},
@@ -318,14 +316,13 @@ class _ChatScreenState extends State<ChatScreen> {
         _controller.clear();
         questionCategoryNumber = 1;
         answers.clear();
-        dass21TextAnswers.clear(); // NUEVO: Limpia respuestas textuales del DASS-21
+        dass21TextAnswers.clear();
       });
       return;
     }
 
     if (_showQuestionnaire) {
-      // CAMBIO: Ahora acepta respuestas textuales (no sólo 0-3)
-      dass21TextAnswers.add(text); // Guarda la respuesta textual
+      dass21TextAnswers.add(text);
 
       questionCategoryNumber++;
 
@@ -335,7 +332,7 @@ class _ChatScreenState extends State<ChatScreen> {
           _controller.clear();
         });
       } else {
-        await _finishQuestionnaire(); // Cambiado a await para procesamiento asíncrono
+        await _finishQuestionnaire();
       }
       return;
     }
@@ -387,9 +384,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     try {
-      // CAMBIO: Transforma respuestas textuales a valores numéricos usando el modelo antes de guardar
       if (_modelLoaded) {
-        // Procesa cada respuesta textual con el modelo LSTM, y suma los scores finales
         double totalDepresion = 0;
         double totalAnsiedad = 0;
         double totalEstres = 0;
@@ -399,14 +394,12 @@ class _ChatScreenState extends State<ChatScreen> {
           totalAnsiedad += pred[1];
           totalEstres += pred[2];
         }
-        // Redondea los resultados finales
         final scores = {
           'depresion': totalDepresion.round(),
           'ansiedad': totalAnsiedad.round(),
           'estres': totalEstres.round(),
         };
 
-        // Guarda el resultado global en Firebase usando ManageAnswers
         await ManageAnswers.saveUserAnswers(userId, scores);
 
         final timestamp = DateFormat(
@@ -502,6 +495,18 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // CONTADOR DE PREGUNTAS AÑADIDO AQUÍ
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      "Pregunta ${questionCategoryNumber} de ${_questions.length}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
                     child: Text(
