@@ -10,8 +10,11 @@ class DASS21Predictor {
   final int _maxLen = 100;
 
   Future<void> loadModelAndTokenizer() async {
-    // Carga el modelo sin FlexDelegate, compatible con cualquier entorno donde tflite_flutter funcione.
-    _interpreter = await Interpreter.fromAsset('assets/model/lstm_daas21_model.tflite');
+    // No agregues FlexDelegate ni Delegate.fromLibrary.
+    // Solo usa la configuración estándar.
+    _interpreter = await Interpreter.fromAsset(
+        'assets/model/lstm_daas21_model.tflite'
+    );
 
     final tokenizerData =
     await rootBundle.loadString('assets/model/tokenizer_daas21.json');
