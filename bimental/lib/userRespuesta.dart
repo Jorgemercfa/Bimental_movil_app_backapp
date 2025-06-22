@@ -1,8 +1,10 @@
 import 'package:bimental/AnswersUser.dart';
 import 'package:bimental/session_service.dart';
+import 'package:bimental/session_services.dart'; // <--- CORREGIDO
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Para kDebugMode
+import 'package:flutter/foundation.dart';
 import 'AnswersRepository.dart';
+import 'ManageAnswers.dart';
 
 void main() {
   runApp(MyApp());
@@ -21,6 +23,54 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// --- FUNCIÓN DE CLASIFICACIÓN LOCAL ---
+Map<String, String> clasificarResultados(int depresion, int ansiedad, int estres) {
+  String clasificacionDepresion;
+  if (depresion >= 14) {
+    clasificacionDepresion = 'Extremadamente severa';
+  } else if (depresion >= 11) {
+    clasificacionDepresion = 'Severa';
+  } else if (depresion >= 7) {
+    clasificacionDepresion = 'Moderada';
+  } else if (depresion >= 5) {
+    clasificacionDepresion = 'Leve';
+  } else {
+    clasificacionDepresion = 'Sin depresión';
+  }
+
+  String clasificacionAnsiedad;
+  if (ansiedad >= 10) {
+    clasificacionAnsiedad = 'Extremadamente severa';
+  } else if (ansiedad >= 8) {
+    clasificacionAnsiedad = 'Severa';
+  } else if (ansiedad >= 5) {
+    clasificacionAnsiedad = 'Moderada';
+  } else if (ansiedad >= 4) {
+    clasificacionAnsiedad = 'Leve';
+  } else {
+    clasificacionAnsiedad = 'Sin ansiedad';
+  }
+
+  String clasificacionEstres;
+  if (estres >= 17) {
+    clasificacionEstres = 'Extremadamente severo';
+  } else if (estres >= 13) {
+    clasificacionEstres = 'Severo';
+  } else if (estres >= 10) {
+    clasificacionEstres = 'Moderado';
+  } else if (estres >= 8) {
+    clasificacionEstres = 'Leve';
+  } else {
+    clasificacionEstres = 'Sin estrés';
+  }
+
+  return {
+    'Depresión': clasificacionDepresion,
+    'Ansiedad': clasificacionAnsiedad,
+    'Estrés': clasificacionEstres,
+  };
+}
+
 class HistorialResultadosScreen extends StatefulWidget {
   @override
   _HistorialResultadosScreenState createState() =>
@@ -31,6 +81,8 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
   List<Map<String, dynamic>> resultados = [];
   bool isLoading = true;
   String? errorMessage;
+  List<String> dass21TextAnswers = [];
+  bool _showQuestionnaire = false;
 
   @override
   void initState() {
@@ -45,7 +97,6 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
         errorMessage = null;
       });
 
-      // Verificar primero si hay usuario autenticado
       final userId = await SessionService.getUserId();
       if (userId == null) {
         setState(() {
@@ -55,12 +106,10 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
         return;
       }
 
-      // Obtener solo los resultados del usuario actual
       List<AnswersUser> data =
       await AnswersRepository.getAnswersFromFirestore(userId);
 
       List<Map<String, dynamic>> nuevosResultados = data.map((result) {
-        // Separar fecha y hora del timestamp
         String fecha = '';
         String hora = '';
         if (result.timestamp.contains(' ')) {
@@ -74,11 +123,8 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
           'p_depresion': result.p_depresion,
           'p_ansiedad': result.p_ansiedad,
           'p_estres': result.p_estres,
-          'clasificacion': {
-            'Depresión': _clasificarDepresion(result.p_depresion),
-            'Ansiedad': _clasificarAnsiedad(result.p_ansiedad),
-            'Estrés': _clasificarEstres(result.p_estres),
-          },
+          'clasificacion': clasificarResultados(
+              result.p_depresion, result.p_ansiedad, result.p_estres), // <--- CORREGIDO
         };
       }).toList();
 
@@ -98,29 +144,30 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
     }
   }
 
-  // Funciones para clasificar los puntajes
-  String _clasificarDepresion(int score) {
-    if (score >= 14) return 'Extremadamente severa';
-    if (score >= 11) return 'Severa';
-    if (score >= 7) return 'Moderada';
-    if (score >= 5) return 'Leve';
-    return 'Sin depresión';
-  }
+  Future<void> _finalizarCuestionario() async {
+    String? userId = await SessionService.getUserId();
+    if (userId == null) {
+      setState(() {
+        errorMessage = 'Debes iniciar sesión para guardar tus resultados';
+      });
+      return;
+    }
 
-  String _clasificarAnsiedad(int score) {
-    if (score >= 10) return 'Extremadamente severa';
-    if (score >= 8) return 'Severa';
-    if (score >= 5) return 'Moderada';
-    if (score >= 4) return 'Leve';
-    return 'Sin ansiedad';
-  }
+    try {
+      Map<String, int> scores = await DASS21Predictor.predictScoresFromTextList(dass21TextAnswers);
+      await ManageAnswers.saveUserAnswers(userId, scores);
 
-  String _clasificarEstres(int score) {
-    if (score >= 17) return 'Extremadamente severo';
-    if (score >= 13) return 'Severo';
-    if (score >= 10) return 'Moderado';
-    if (score >= 8) return 'Leve';
-    return 'Sin estrés';
+      setState(() {
+        dass21TextAnswers.clear();
+        _showQuestionnaire = false;
+      });
+
+      _cargarResultados();
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error al guardar los resultados: ${e.toString()}';
+      });
+    }
   }
 
   @override
@@ -131,70 +178,124 @@ class _HistorialResultadosScreenState extends State<HistorialResultadosScreen> {
         backgroundColor: const Color(0xFF1A119B),
         iconTheme: IconThemeData(color: Colors.white),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _showQuestionnaire = true;
+          });
+        },
+        child: Icon(Icons.add),
+        backgroundColor: Color(0xFF1A119B),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : errorMessage != null
-            ? Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Text(
-              errorMessage!,
-              style: TextStyle(fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        )
-            : resultados.isEmpty
-            ? Center(
-          child: Text(
-            'No hay resultados guardados.',
-            style: TextStyle(fontSize: 18),
-          ),
-        )
-            : ListView.builder(
-          itemCount: resultados.length,
-          itemBuilder: (context, index) {
-            final resultado = resultados[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ResultadoDetalleScreen(
-                      fecha: resultado['fecha'],
-                      hora: resultado['hora'],
-                      detalles: resultado,
-                    ),
+        child: _showQuestionnaire
+            ? _buildQuestionnaireWidget()
+            : _buildResultsWidget(),
+      ),
+    );
+  }
+
+  Widget _buildQuestionnaireWidget() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: 21,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextField(
+                  onChanged: (value) {
+                    if (dass21TextAnswers.length <= index) {
+                      dass21TextAnswers.add(value);
+                    } else {
+                      dass21TextAnswers[index] = value;
+                    }
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Respuesta a la pregunta ${index + 1}',
+                    border: OutlineInputBorder(),
                   ),
-                );
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 8.0),
-                padding: const EdgeInsets.symmetric(
-                    vertical: 16.0, horizontal: 8.0),
-                decoration: BoxDecoration(
-                  color: Color(0xFF1A119B),
-                  borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.insert_chart,
-                        color: Colors.white, size: 30),
-                    SizedBox(width: 16),
-                    Text(
-                      '${resultado['fecha']} ${resultado['hora']}',
-                      style: TextStyle(
-                          color: Colors.white, fontSize: 18),
-                    ),
-                  ],
+              );
+            },
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _finalizarCuestionario,
+          child: Text('Finalizar cuestionario'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF1A119B), // <-- CORREGIDO
+            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          ),
+        ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildResultsWidget() {
+    return isLoading
+        ? Center(child: CircularProgressIndicator())
+        : errorMessage != null
+        ? Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Text(
+          errorMessage!,
+          style: TextStyle(fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    )
+        : resultados.isEmpty
+        ? Center(
+      child: Text(
+        'No hay resultados guardados.',
+        style: TextStyle(fontSize: 18),
+      ),
+    )
+        : ListView.builder(
+      itemCount: resultados.length,
+      itemBuilder: (context, index) {
+        final resultado = resultados[index];
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ResultadoDetalleScreen(
+                  fecha: resultado['fecha'],
+                  hora: resultado['hora'],
+                  detalles: resultado,
                 ),
               ),
             );
           },
-        ),
-      ),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            padding: const EdgeInsets.symmetric(
+                vertical: 16.0, horizontal: 8.0),
+            decoration: BoxDecoration(
+              color: Color(0xFF1A119B),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.insert_chart,
+                    color: Colors.white, size: 30),
+                SizedBox(width: 16),
+                Text(
+                  '${resultado['fecha']} ${resultado['hora']}',
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 18),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -226,21 +327,21 @@ class ResultadoDetalleScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 24),
-            Text(
-              'Nivel de ansiedad: ${clasificacion['Ansiedad']}',
-              style: TextStyle(fontSize: 20),
-            ),
-            SizedBox(height: 24),
             Text(
               'Nivel de depresión: ${clasificacion['Depresión']}',
               style: TextStyle(fontSize: 20),
             ),
-            SizedBox(height: 24),
+            SizedBox(height: 16),
+            Text(
+              'Nivel de ansiedad: ${clasificacion['Ansiedad']}',
+              style: TextStyle(fontSize: 20),
+            ),
+            SizedBox(height: 16),
             Text(
               'Nivel de estrés: ${clasificacion['Estrés']}',
               style: TextStyle(fontSize: 20),
             ),
+            SizedBox(height: 16),
           ],
         ),
       ),

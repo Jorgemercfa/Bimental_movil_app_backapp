@@ -1,34 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'AnswersRepository.dart';
+import 'ManageAnswers.dart';
 
-// Simulación de datos que deberías traer de tu backend o base local
-final int totalEvaluaciones = 32;
-final int usuariosAltoAnsiedad = 5;
-final int usuariosAltoDepresion = 3;
-final int usuariosAltoEstres = 4;
-final Map<String, int> estadosHistoricos = {
-  'Ene': 10,
-  'Feb': 14,
-  'Mar': 8,
-  'Abr': 12,
-  'May': 9,
-  'Jun': 15,
-};
-
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final azulBimental = const Color(0xFF1A119B);
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
 
+class _DashboardScreenState extends State<DashboardScreen> {
+  int totalEvaluaciones = 0;
+  int usuariosAltoAnsiedad = 0;
+  int usuariosAltoDepresion = 0;
+  int usuariosAltoEstres = 0;
+  Map<String, int> estadosHistoricos = {};
+  bool isLoading = true;
+
+  final azulBimental = const Color(0xFF1A119B);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() => isLoading = true);
+
+    final allUsersAnswers = await AnswersRepository.getAllAnswersFromFirestore();
+
+    totalEvaluaciones = allUsersAnswers.length;
+    usuariosAltoAnsiedad = allUsersAnswers.where((a) => a.p_ansiedad >= 8).length;
+    usuariosAltoDepresion = allUsersAnswers.where((a) => a.p_depresion >= 11).length;
+    usuariosAltoEstres = allUsersAnswers.where((a) => a.p_estres >= 13).length;
+
+    Map<String, int> tempHistoricos = {};
+    for (final answer in allUsersAnswers) {
+      String fecha = '';
+      if (answer.timestamp.contains(' ')) {
+        fecha = answer.timestamp.split(' ')[0];
+      } else {
+        fecha = answer.timestamp;
+      }
+      DateTime? dt;
+      try {
+        dt = DateTime.parse(fecha);
+      } catch (_) {
+        dt = null;
+      }
+      if (dt != null) {
+        String mes = _getShortMonth(dt.month);
+        tempHistoricos[mes] = (tempHistoricos[mes] ?? 0) + 1;
+      }
+    }
+    final mesesEnOrden = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    estadosHistoricos = {
+      for (final m in mesesEnOrden)
+        if (tempHistoricos.containsKey(m)) m: tempHistoricos[m]!
+    };
+
+    setState(() => isLoading = false);
+  }
+
+  String _getShortMonth(int mes) {
+    switch (mes) {
+      case 1:
+        return 'Ene';
+      case 2:
+        return 'Feb';
+      case 3:
+        return 'Mar';
+      case 4:
+        return 'Abr';
+      case 5:
+        return 'May';
+      case 6:
+        return 'Jun';
+      case 7:
+        return 'Jul';
+      case 8:
+        return 'Ago';
+      case 9:
+        return 'Sep';
+      case 10:
+        return 'Oct';
+      case 11:
+        return 'Nov';
+      case 12:
+        return 'Dic';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: azulBimental,
         title: const Text('Dashboard', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Center(
@@ -51,33 +130,53 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // KPIs en tarjetas
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          // KPIs en tarjetas (2 filas de 2 KPIs cada una)
+          Column(
             children: [
-              _KpiCard(
-                label: 'Evaluaciones',
-                value: '$totalEvaluaciones',
-                icon: Icons.assignment_turned_in,
-                color: azulBimental,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: _KpiCard(
+                      label: 'Evaluaciones',
+                      value: '$totalEvaluaciones',
+                      icon: Icons.assignment_turned_in,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _KpiCard(
+                      label: 'Alta Ansiedad',
+                      value: '$usuariosAltoAnsiedad',
+                      icon: Icons.warning_amber,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
               ),
-              _KpiCard(
-                label: 'Alta Ansiedad',
-                value: '$usuariosAltoAnsiedad',
-                icon: Icons.warning_amber,
-                color: Colors.orange,
-              ),
-              _KpiCard(
-                label: 'Alta Depresión',
-                value: '$usuariosAltoDepresion',
-                icon: Icons.warning_amber_rounded,
-                color: Colors.redAccent,
-              ),
-              _KpiCard(
-                label: 'Alto Estrés',
-                value: '$usuariosAltoEstres',
-                icon: Icons.warning,
-                color: Colors.purple,
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: _KpiCard(
+                      label: 'Alta Depresión',
+                      value: '$usuariosAltoDepresion',
+                      icon: Icons.warning_amber_rounded,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _KpiCard(
+                      label: 'Alto Estrés',
+                      value: '$usuariosAltoEstres',
+                      icon: Icons.warning,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -87,8 +186,8 @@ class DashboardScreen extends StatelessWidget {
           // Gráfico de evolución
           Card(
             elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -96,7 +195,8 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'Evolución de evaluaciones en el tiempo',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -119,12 +219,15 @@ class DashboardScreen extends StatelessWidget {
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
-                                final meses = estadosHistoricos.keys.toList();
+                                final meses =
+                                estadosHistoricos.keys.toList();
                                 if (value.toInt() < 0 ||
-                                    value.toInt() >= meses.length)
+                                    value.toInt() >= meses.length) {
                                   return const SizedBox();
+                                }
                                 return Text(meses[value.toInt()],
-                                    style: const TextStyle(fontSize: 12));
+                                    style:
+                                    const TextStyle(fontSize: 12));
                               },
                             ),
                           ),
@@ -135,7 +238,8 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         borderData: FlBorderData(show: false),
                         gridData: FlGridData(show: false),
-                        barGroups: List.generate(estadosHistoricos.length, (i) {
+                        barGroups: List.generate(
+                            estadosHistoricos.length, (i) {
                           return BarChartGroupData(
                             x: i,
                             barRods: [
@@ -165,8 +269,8 @@ class DashboardScreen extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: azulBimental,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 30, vertical: 14),
               ),
               onPressed: () {
                 Navigator.pushNamed(context, '/historial');
