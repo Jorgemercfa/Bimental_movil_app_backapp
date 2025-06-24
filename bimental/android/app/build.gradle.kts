@@ -33,11 +33,6 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-
-    packagingOptions {
-        pickFirst("lib/**/libtensorflowlite.so")
-        pickFirst("lib/**/libtensorflowlite_select_tf_ops.so")
-    }
 }
 
 flutter {
@@ -47,8 +42,8 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("org.tensorflow:tensorflow-lite:2.15.0.so")
-    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.15.0.so")
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0")
 
     // Ejemplos de dependencias Firebase (añade según las que uses en Dart)
     implementation("com.google.firebase:firebase-analytics")

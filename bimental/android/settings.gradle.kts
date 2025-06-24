@@ -13,15 +13,6 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://storage.googleapis.com/tensorflow/maven") }
-    }
-}
-
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url = uri("https://storage.googleapis.com/tensorflow/maven") }
     }
 }
 
